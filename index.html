@@ -200,6 +200,60 @@
     visibility: visible;
   }
 
+  .confirm-modal {
+    width: min(100% - 24px, 420px);
+    border: 0;
+    border-radius: 14px;
+    padding: 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .28);
+  }
+
+  .confirm-modal::backdrop {
+    background: rgba(16, 37, 74, .52);
+  }
+
+  .confirm-modal-body {
+    padding: 22px 20px 18px;
+  }
+
+  .confirm-modal h2 {
+    margin: 0 0 10px;
+    color: var(--red);
+    font-size: 1.3rem;
+  }
+
+  .confirm-modal p {
+    margin: 0;
+    color: #26384e;
+    line-height: 1.45;
+  }
+
+  .confirm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  .confirm-modal-actions button {
+    border: 1px solid var(--navy);
+    border-radius: 9px;
+    background: white;
+    color: var(--navy);
+    min-height: 44px;
+    padding: 10px 15px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .confirm-modal-actions .primary {
+    border-color: var(--red);
+    background: var(--red);
+    color: white;
+  }
+
   .how-to {
     margin: 0 12px 14px;
     border-top: 1px solid #d7dce2;
@@ -280,6 +334,17 @@
 
 <canvas id="confetti" aria-hidden="true"></canvas>
 
+<dialog id="refreshConfirmModal" class="confirm-modal" aria-labelledby="refreshConfirmTitle">
+  <form method="dialog" class="confirm-modal-body">
+    <h2 id="refreshConfirmTitle">Refresh this page?</h2>
+    <p>Refreshing resets your bingo board and clears any marked squares.</p>
+    <div class="confirm-modal-actions">
+      <button id="cancelRefreshBtn" type="submit" value="cancel">Cancel</button>
+      <button id="confirmRefreshBtn" class="primary" type="submit" value="confirm">Refresh</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 "use strict";
 
@@ -344,10 +409,15 @@ const boardEl = document.getElementById("board");
 const bingoMessageEl = document.getElementById("bingoMessage");
 const resetBtn = document.getElementById("resetBtn");
 const clearBtn = document.getElementById("clearBtn");
+const refreshConfirmModal = document.getElementById("refreshConfirmModal");
+const confirmRefreshBtn = document.getElementById("confirmRefreshBtn");
+const cancelRefreshBtn = document.getElementById("cancelRefreshBtn");
 
 let currentItems = [];
 let marked = new Set();
 let bingoWasActive = false;
+let skipRefreshWarning = false;
+let lastFocusedElement = null;
 
 /* Fisher-Yates copy/shuffle so BINGO_OPTIONS is never mutated. */
 function shuffledCopy(items) {
@@ -571,6 +641,57 @@ function celebrate() {
 
   requestAnimationFrame(frame);
 }
+
+function openRefreshConfirmModal() {
+  if (refreshConfirmModal.open) return;
+  lastFocusedElement = document.activeElement;
+  refreshConfirmModal.showModal();
+  confirmRefreshBtn.focus();
+}
+
+function closeRefreshConfirmModal() {
+  if (!refreshConfirmModal.open) return;
+  refreshConfirmModal.close("cancel");
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    lastFocusedElement.focus();
+  }
+}
+
+window.addEventListener("keydown", event => {
+  const key = event.key.toLowerCase();
+  const wantsRefresh = event.key === "F5" || ((event.ctrlKey || event.metaKey) && key === "r");
+
+  if (!wantsRefresh || event.defaultPrevented) return;
+
+  event.preventDefault();
+  openRefreshConfirmModal();
+});
+
+window.addEventListener("beforeunload", event => {
+  if (skipRefreshWarning) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+refreshConfirmModal.addEventListener("cancel", event => {
+  event.preventDefault();
+  closeRefreshConfirmModal();
+});
+
+refreshConfirmModal.addEventListener("click", event => {
+  if (event.target === refreshConfirmModal) {
+    closeRefreshConfirmModal();
+  }
+});
+
+confirmRefreshBtn.addEventListener("click", () => {
+  skipRefreshWarning = true;
+  window.location.reload();
+});
+
+cancelRefreshBtn.addEventListener("click", () => {
+  closeRefreshConfirmModal();
+});
 
 resetBtn.addEventListener("click", generateCard);
 clearBtn.addEventListener("click", clearMarks);
