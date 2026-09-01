@@ -572,6 +572,11 @@ function celebrate() {
   requestAnimationFrame(frame);
 }
 
+window.addEventListener("beforeunload", event => {
+ event.preventDefault();
+ event.returnValue = "";
+});
+
 resetBtn.addEventListener("click", generateCard);
 clearBtn.addEventListener("click", clearMarks);
 
