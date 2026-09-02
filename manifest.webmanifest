@@ -13,12 +13,12 @@
   },
   "icons": [
     {
-      "src": "https://github.com/user-attachments/assets/62eb096a-92d8-4167-a308-26f896327736",
+      "src": "assets/images/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://github.com/user-attachments/assets/62eb096a-92d8-4167-a308-26f896327736",
+      "src": "assets/images/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

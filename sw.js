@@ -1,11 +1,13 @@
 "use strict";
 
-const CACHE_NAME = "redcapcon-bingo-v2";
+const CACHE_NAME = "redcapcon-bingo-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./assets/css/styles.css",
   "./assets/images/center-logo.jpg",
+  "./assets/images/icon-192.png",
+  "./assets/images/icon-512.png",
   "./manifest.webmanifest"
 ];
 
