@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>REDCapCon Bingo</title>
+  <meta name="theme-color" content="#10254a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/images/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/images/icon-192.png">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
@@ -360,6 +364,12 @@ clearBtn.addEventListener("click", clearMarks);
 window.addEventListener("resize", fitSquareLabels);
 
 generateCard();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
