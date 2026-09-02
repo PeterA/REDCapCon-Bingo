@@ -26,7 +26,8 @@
 
   <div class="controls">
     <button id="resetBtn" type="button">New Card</button>
-    <button id="clearBtn" class="primary" type="button">Clear Marked Squares</button>
+    <button id="clearBtn" type="button">Clear Squares</button>
+    <button id="settingsBtn" type="button" aria-haspopup="dialog" aria-controls="settingsModal" aria-expanded="false" aria-label="Open settings dialog" title="Settings"><svg class="settings-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false"><line x1="5" y1="6" x2="19" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line><circle cx="9" cy="6" r="2.5" fill="#fff" stroke="currentColor" stroke-width="2"></circle><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line><circle cx="15" cy="12" r="2.5" fill="#fff" stroke="currentColor" stroke-width="2"></circle><line x1="5" y1="18" x2="19" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line><circle cx="11" cy="18" r="2.5" fill="#fff" stroke="currentColor" stroke-width="2"></circle></svg><span class="visually-hidden">Open settings dialog</span></button>
   </div>
 
   <section class="how-to" aria-labelledby="howToTitle">
@@ -42,6 +43,44 @@
 </main>
 
 <canvas id="confetti" aria-hidden="true"></canvas>
+
+<div id="settingsModal" class="modal-shell" hidden>
+  <div class="modal-backdrop" data-close-modal="true"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <h2 id="settingsTitle">Marker Settings</h2>
+    <p>Choose the chip marker color for marked squares.</p>
+    <div class="color-options" role="radiogroup" aria-label="Chip marker color">
+      <label class="color-option">
+        <input type="radio" name="markerColor" value="red">
+        <span class="swatch red" aria-hidden="true"></span>
+        <span>Red</span>
+      </label>
+      <label class="color-option">
+        <input type="radio" name="markerColor" value="green">
+        <span class="swatch green" aria-hidden="true"></span>
+        <span>Green</span>
+      </label>
+      <label class="color-option">
+        <input type="radio" name="markerColor" value="blue" checked>
+        <span class="swatch blue" aria-hidden="true"></span>
+        <span>Blue</span>
+      </label>
+      <label class="color-option">
+        <input type="radio" name="markerColor" value="yellow">
+        <span class="swatch yellow" aria-hidden="true"></span>
+        <span>Yellow</span>
+      </label>
+      <label class="color-option">
+        <input type="radio" name="markerColor" value="clear">
+        <span class="swatch clear" aria-hidden="true"></span>
+        <span>Clear</span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button id="closeSettingsBtn" type="button">Done</button>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -104,6 +143,28 @@ const GENERAL_CONFERENCE_OPTIONS = [
 
 const MIN_GENERAL_CONFERENCE_RATIO = 0.35;
 const LABEL_FONT_SCALE_STEPS = [1, 0.85, 0.74, 0.66];
+const MARKER_COLOR_MAP = {
+  red: {
+    chipColor: "rgba(207, 60, 65, 0.29)",
+    chipBorder: "rgba(177, 51, 57, 0.24)"
+  },
+  green: {
+    chipColor: "rgba(77, 156, 112, 0.29)",
+    chipBorder: "rgba(65, 128, 92, 0.24)"
+  },
+  blue: {
+    chipColor: "rgba(74, 133, 224, 0.29)",
+    chipBorder: "rgba(65, 112, 184, 0.24)"
+  },
+  yellow: {
+    chipColor: "rgba(232, 190, 79, 0.29)",
+    chipBorder: "rgba(191, 154, 55, 0.24)"
+  },
+  clear: {
+    chipColor: "rgba(255, 255, 255, 0.12)",
+    chipBorder: "rgba(120, 138, 163, 0.28)"
+  }
+};
 
 /* REDCap R image */
 const CENTER_LOGO = "assets/images/center-logo.jpg";
@@ -118,6 +179,11 @@ const boardEl = document.getElementById("board");
 const bingoMessageEl = document.getElementById("bingoMessage");
 const resetBtn = document.getElementById("resetBtn");
 const clearBtn = document.getElementById("clearBtn");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsModal = document.getElementById("settingsModal");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const colorInputs = Array.from(document.querySelectorAll('input[name="markerColor"]'));
+const STORAGE_KEY = "marker-color";
 
 let currentItems = [];
 let marked = new Set();
@@ -126,6 +192,7 @@ let hadBlackout = false;
 let completedLineKeys = new Set();
 let blackoutFlashTimeout = null;
 let bingoFlashTimeout = null;
+let lastFocusedElement = null;
 
 /* Fisher-Yates copy/shuffle so BINGO_OPTIONS is never mutated. */
 function shuffledCopy(items) {
@@ -400,6 +467,42 @@ function clearMarks() {
   updateBingoState(false);
 }
 
+function applyMarkerColor(color) {
+  const nextColor = MARKER_COLOR_MAP[color] ? color : "blue";
+  document.documentElement.style.setProperty("--chip-color", MARKER_COLOR_MAP[nextColor].chipColor);
+  document.documentElement.style.setProperty("--chip-border", MARKER_COLOR_MAP[nextColor].chipBorder);
+  colorInputs.forEach(input => {
+    input.checked = input.value === nextColor;
+  });
+  try {
+    localStorage.setItem(STORAGE_KEY, nextColor);
+  } catch (_) {}
+}
+
+function loadMarkerColor() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || "blue";
+  } catch (_) {
+    return "blue";
+  }
+}
+
+function openSettings() {
+  lastFocusedElement = document.activeElement;
+  settingsModal.hidden = false;
+  settingsBtn.setAttribute("aria-expanded", "true");
+  const checkedInput = colorInputs.find(input => input.checked) || colorInputs[0];
+  checkedInput.focus();
+}
+
+function closeSettings() {
+  settingsModal.hidden = true;
+  settingsBtn.setAttribute("aria-expanded", "false");
+  if (lastFocusedElement instanceof HTMLElement) {
+    lastFocusedElement.focus();
+  }
+}
+
 /* Lightweight confetti animation. No sound and no external library. */
 function celebrate(multiplier = 1, blackout = false) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -470,8 +573,24 @@ window.addEventListener("beforeunload", event => {
 
 resetBtn.addEventListener("click", generateCard);
 clearBtn.addEventListener("click", clearMarks);
+settingsBtn.addEventListener("click", openSettings);
+closeSettingsBtn.addEventListener("click", closeSettings);
+settingsModal.addEventListener("click", event => {
+  if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
+    closeSettings();
+  }
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !settingsModal.hidden) {
+    closeSettings();
+  }
+});
+colorInputs.forEach(input => {
+  input.addEventListener("change", () => applyMarkerColor(input.value));
+});
 window.addEventListener("resize", fitSquareLabels);
 
+applyMarkerColor(loadMarkerColor());
 generateCard();
 
 if ("serviceWorker" in navigator) {
