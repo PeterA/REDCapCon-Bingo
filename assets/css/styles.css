@@ -69,6 +69,10 @@
     background: white;
   }
 
+  .board.blackout-flash .square {
+    animation: blackout-flash 520ms ease-in-out 3;
+  }
+
   .square {
     position: relative;
     appearance: none;
@@ -226,6 +230,11 @@
     z-index: 9999;
   }
 
+  @keyframes blackout-flash {
+    0%, 100% { filter: none; }
+    50% { filter: brightness(0); }
+  }
+
   @media (max-width: 430px) {
     body { padding: 6px; }
     .app { border-radius: 10px; }
@@ -239,4 +248,5 @@
 
   @media (prefers-reduced-motion: reduce) {
     .square .chip { transition: none; }
+    .board.blackout-flash .square { animation: none; }
   }
