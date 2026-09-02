@@ -130,13 +130,12 @@ header h1 {
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.4) 0 16%, transparent 17% 32%),
-    radial-gradient(circle at 50% 45%, var(--chip-color) 0 62%, color-mix(in srgb, var(--chip-color) 86%, black) 100%);
+    radial-gradient(circle at 50% 42%, var(--chip-color) 0 60%, color-mix(in srgb, var(--chip-color) 82%, black) 100%);
   border: 2px solid var(--chip-border);
   box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.26),
-    inset 0 -4px 7px rgba(0, 0, 0, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.16);
+    inset 0 1px 2px rgba(255, 255, 255, 0.16),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.12);
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) scale(.85);
@@ -390,7 +389,7 @@ header h1 {
     <p>Choose the chip marker color for marked squares.</p>
     <div class="color-options" role="radiogroup" aria-label="Chip marker color">
       <label class="color-option">
-        <input type="radio" name="markerColor" value="red" checked>
+        <input type="radio" name="markerColor" value="red">
         <span class="swatch red" aria-hidden="true"></span>
         <span>Red</span>
       </label>
@@ -400,7 +399,7 @@ header h1 {
         <span>Green</span>
       </label>
       <label class="color-option">
-        <input type="radio" name="markerColor" value="blue">
+        <input type="radio" name="markerColor" value="blue" checked>
         <span class="swatch blue" aria-hidden="true"></span>
         <span>Blue</span>
       </label>
@@ -822,9 +821,9 @@ function applyMarkerColor(color) {
 
 function loadMarkerColor() {
   try {
-    return localStorage.getItem(STORAGE_KEY) || "red";
+    return localStorage.getItem(STORAGE_KEY) || "blue";
   } catch (_) {
-    return "red";
+    return "blue";
   }
 }
 
