@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "redcapcon-bingo-v9";
+const CACHE_NAME = "redcapcon-bingo-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
