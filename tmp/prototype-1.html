@@ -8,13 +8,7 @@
 :root {
   --chip-color: rgba(199, 25, 32, 0.44);
   --chip-border: rgba(163, 15, 21, 0.28);
-  --chip-accent: #c71920;
   --red: #c71920;
-  --red-dark: #a30f15;
-  --green: #2e8b57;
-  --green-dark: #1f6a40;
-  --blue: #2a6fdb;
-  --blue-dark: #1f57ac;
   --navy: #10254a;
   --line: #263b5d;
   --bg: #f4f6f8;
@@ -75,6 +69,7 @@ header h1 {
 }
 .square {
   position: relative;
+  isolation: isolate;
   appearance: none;
   -webkit-appearance: none;
   border: 0;
@@ -92,6 +87,15 @@ header h1 {
   text-align: center;
   cursor: pointer;
   overflow: hidden;
+}
+.square::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
 }
 .square:nth-child(5n) { border-right: 0; }
 .square:nth-child(n+21) { border-bottom: 0; }
@@ -111,10 +115,14 @@ header h1 {
   width: 100%;
   height: 100%;
   padding: 2px;
+  line-height: 1.1;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 .square .chip {
   position: absolute;
-  z-index: 0;
+  z-index: 3;
   width: 72%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
@@ -154,7 +162,7 @@ header h1 {
   gap: 10px;
   justify-content: center;
   padding: 14px 12px 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .controls button,
 .modal button {
@@ -167,6 +175,15 @@ header h1 {
   font-size: .98rem;
   font-weight: 700;
   cursor: pointer;
+}
+.controls button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+#settingsBtn {
+  flex: 0 0 52px;
+  padding-left: 0;
+  padding-right: 0;
 }
 .controls button:active,
 .modal button:active {
@@ -201,6 +218,14 @@ header h1 {
   color: #26384e;
   font-size: .94rem;
   line-height: 1.35;
+}
+#confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
 }
 .modal-shell[hidden] { display: none; }
 .modal-shell {
@@ -264,10 +289,38 @@ header h1 {
   display: flex;
   justify-content: flex-end;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@keyframes blackout-square-flash {
+  0% { opacity: 0; }
+  40%, 65% { opacity: .92; }
+  100% { opacity: 0; }
+}
+.board.blackout-flash .square:not(.free)::after {
+  animation: blackout-square-flash 900ms ease-in-out 1;
+}
+@keyframes bingo-square-flash {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.square.bingo-flash .chip {
+  animation: bingo-square-flash 650ms ease-in-out 1;
+}
 @media (max-width: 560px) {
   body { padding: 8px; }
   .controls { gap: 8px; }
-  .controls button { flex: 1 1 100%; }
+  .controls button { font-size: .9rem; padding-left: 10px; padding-right: 10px; }
+  #settingsBtn { flex-basis: 48px; }
 }
 </style>
 </head>
@@ -288,7 +341,7 @@ header h1 {
   <div class="controls">
     <button id="resetBtn" type="button">New Card</button>
     <button id="clearBtn" type="button">Clear Squares</button>
-    <button id="settingsBtn" type="button" aria-haspopup="dialog" aria-controls="settingsModal">Settings</button>
+    <button id="settingsBtn" type="button" aria-haspopup="dialog" aria-controls="settingsModal" aria-label="Settings"><span aria-hidden="true">⚙</span><span class="visually-hidden">Settings</span></button>
   </div>
 
   <section class="how-to" aria-labelledby="howToTitle">
@@ -302,6 +355,8 @@ header h1 {
     <p><i>This is not an official REDCap or REDCapCon app.</i></p>
   </section>
 </main>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
 
 <div id="settingsModal" class="modal-shell" hidden>
   <div class="modal-backdrop" data-close-modal="true"></div>
@@ -397,9 +452,13 @@ const MARKER_COLOR_MAP = {
 };
 
 const MIN_GENERAL_CONFERENCE_RATIO = 0.35;
+const LABEL_FONT_SCALE_STEPS = [1, 0.85, 0.74, 0.66];
 const BOARD_SIZE = 5;
 const CENTER_INDEX = 12;
 const STORAGE_KEY = "prototype-1-marker-color";
+const BLACKOUT_LABEL = "Blackout Bingo!";
+const BLACKOUT_FLASH_DURATION_MS = 900;
+const BINGO_FLASH_DURATION_MS = 650;
 
 const boardEl = document.getElementById("board");
 const bingoMessageEl = document.getElementById("bingoMessage");
@@ -413,6 +472,11 @@ const colorInputs = Array.from(document.querySelectorAll('input[name="markerColo
 let currentItems = [];
 let marked = new Set();
 let lastFocusedElement = null;
+let bingoLineCount = 0;
+let hadBlackout = false;
+let completedLineKeys = new Set();
+let blackoutFlashTimeout = null;
+let bingoFlashTimeout = null;
 
 function shuffledCopy(items) {
   const copy = [...items];
@@ -445,8 +509,13 @@ function generateCard() {
   }
 
   marked = new Set();
+  bingoLineCount = 0;
+  hadBlackout = false;
+  completedLineKeys = new Set();
+  clearBlackoutFlash();
+  clearBingoFlash();
   renderBoard();
-  updateBingoState();
+  updateBingoState(false);
 }
 
 function renderBoard() {
@@ -486,6 +555,22 @@ function renderBoard() {
 
     boardEl.appendChild(cell);
   });
+
+  requestAnimationFrame(fitSquareLabels);
+}
+
+function fitSquareLabels() {
+  boardEl.querySelectorAll(".square:not(.free) .label").forEach(label => {
+    label.style.fontSize = "";
+
+    for (const scale of LABEL_FONT_SCALE_STEPS) {
+      label.style.fontSize = `${scale}em`;
+
+      if (label.scrollHeight <= label.clientHeight && label.scrollWidth <= label.clientWidth) {
+        break;
+      }
+    }
+  });
 }
 
 function toggleSquare(index, cell) {
@@ -499,7 +584,7 @@ function toggleSquare(index, cell) {
     cell.setAttribute("aria-pressed", "true");
   }
 
-  updateBingoState();
+  updateBingoState(true);
 }
 
 function allLines() {
@@ -523,14 +608,103 @@ function isMarked(index) {
   return index === CENTER_INDEX || marked.has(index);
 }
 
-function updateBingoState() {
-  const bingoCount = allLines().filter(line => line.every(isMarked)).length;
+function lineKey(line) {
+  return line.join(",");
+}
+
+function completedLines() {
+  return allLines().filter(line => line.every(isMarked));
+}
+
+function isBlackout() {
+  return marked.size === BOARD_SIZE * BOARD_SIZE - 1;
+}
+
+function clearBlackoutFlash() {
+  if (blackoutFlashTimeout) {
+    clearTimeout(blackoutFlashTimeout);
+    blackoutFlashTimeout = null;
+  }
+  boardEl.classList.remove("blackout-flash");
+}
+
+function clearBingoFlash() {
+  if (bingoFlashTimeout) {
+    clearTimeout(bingoFlashTimeout);
+    bingoFlashTimeout = null;
+  }
+  boardEl.querySelectorAll(".square.bingo-flash").forEach(cell => {
+    cell.classList.remove("bingo-flash");
+  });
+}
+
+function triggerBlackoutFlash() {
+  boardEl.classList.remove("blackout-flash");
+  void boardEl.offsetWidth;
+  boardEl.classList.add("blackout-flash");
+
+  blackoutFlashTimeout = setTimeout(() => {
+    boardEl.classList.remove("blackout-flash");
+    blackoutFlashTimeout = null;
+  }, BLACKOUT_FLASH_DURATION_MS);
+}
+
+function triggerBingoFlash(lines) {
+  const squaresToFlash = new Set();
+
+  lines.forEach(line => {
+    line.forEach(index => {
+      if (index !== CENTER_INDEX) squaresToFlash.add(index);
+    });
+  });
+
+  if (!squaresToFlash.size) return;
+
+  clearBingoFlash();
+  const cells = boardEl.querySelectorAll(".square");
+  squaresToFlash.forEach(index => {
+    const cell = cells[index];
+    if (!cell || cell.classList.contains("free")) return;
+    cell.classList.remove("bingo-flash");
+    void cell.offsetWidth;
+    cell.classList.add("bingo-flash");
+  });
+
+  bingoFlashTimeout = setTimeout(() => {
+    boardEl.querySelectorAll(".square.bingo-flash").forEach(cell => {
+      cell.classList.remove("bingo-flash");
+    });
+    bingoFlashTimeout = null;
+  }, BINGO_FLASH_DURATION_MS);
+}
+
+function updateBingoState(allowCelebration) {
+  const lines = completedLines();
+  const bingoCount = lines.length;
+  const blackout = isBlackout();
   const active = bingoCount > 0;
 
   bingoMessageEl.classList.toggle("show", active);
-  bingoMessageEl.textContent = active
-    ? (bingoCount === 1 ? "BINGO!" : `BINGO! x ${bingoCount}`)
-    : "BINGO!";
+  if (active) {
+    bingoMessageEl.textContent = blackout
+      ? BLACKOUT_LABEL
+      : (bingoCount === 1 ? "BINGO!" : `BINGO! x ${bingoCount}`);
+  } else {
+    bingoMessageEl.textContent = "BINGO!";
+  }
+
+  const completedKeys = new Set(lines.map(lineKey));
+  const newLineList = lines.filter(line => !completedLineKeys.has(lineKey(line)));
+  const newBingos = newLineList.length;
+  const newBlackout = blackout && !hadBlackout;
+  if (allowCelebration && (newBingos > 0 || newBlackout)) {
+    if (newBingos > 0 && !newBlackout) triggerBingoFlash(newLineList);
+    celebrate(Math.max(1, newBingos), newBlackout);
+  }
+
+  bingoLineCount = bingoCount;
+  hadBlackout = blackout;
+  completedLineKeys = completedKeys;
 }
 
 function clearMarks() {
@@ -539,7 +713,74 @@ function clearMarks() {
     cell.classList.remove("marked");
     cell.setAttribute("aria-pressed", "false");
   });
-  updateBingoState();
+  bingoLineCount = 0;
+  hadBlackout = false;
+  completedLineKeys = new Set();
+  clearBlackoutFlash();
+  clearBingoFlash();
+  updateBingoState(false);
+}
+
+function celebrate(multiplier = 1, blackout = false) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (blackout) triggerBlackoutFlash();
+
+  const canvas = document.getElementById("confetti");
+  const ctx = canvas.getContext("2d");
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+  const resize = () => {
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  resize();
+
+  const colors = ["#c71920", "#ffffff", "#10254a", "#ef5350", "#ffd54f"];
+  const pieces = Array.from({ length: 110 * multiplier }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: -20 - Math.random() * window.innerHeight * 0.35,
+    w: 5 + Math.random() * 7,
+    h: 8 + Math.random() * 10,
+    vx: -1.8 + Math.random() * 3.6,
+    vy: 2.8 + Math.random() * 4.2,
+    rotation: Math.random() * Math.PI * 2,
+    spin: -0.18 + Math.random() * 0.36,
+    color: colors[Math.floor(Math.random() * colors.length)]
+  }));
+
+  const start = performance.now();
+  const duration = 2400;
+
+  function frame(now) {
+    const elapsed = now - start;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    pieces.forEach(piece => {
+      piece.x += piece.vx;
+      piece.y += piece.vy;
+      piece.vy += 0.035;
+      piece.rotation += piece.spin;
+
+      ctx.save();
+      ctx.translate(piece.x, piece.y);
+      ctx.rotate(piece.rotation);
+      ctx.fillStyle = piece.color;
+      ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+      ctx.restore();
+    });
+
+    if (elapsed < duration) {
+      requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+  }
+
+  requestAnimationFrame(frame);
 }
 
 function applyMarkerColor(color) {
@@ -594,6 +835,7 @@ colorInputs.forEach(input => {
   input.addEventListener("change", () => applyMarkerColor(input.value));
 });
 
+window.addEventListener("resize", fitSquareLabels);
 applyMarkerColor(loadMarkerColor());
 generateCard();
 </script>
