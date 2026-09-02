@@ -377,7 +377,7 @@ function updateBingoState(allowCelebration) {
   const newBingos = newLineList.length;
   const newBlackout = blackout && !hadBlackout;
   if (allowCelebration && (newBingos > 0 || newBlackout)) {
-    if (newBingos > 0) triggerBingoFlash(newLineList);
+    if (newBingos > 0 && !newBlackout) triggerBingoFlash(newLineList);
     celebrate(Math.max(1, newBingos), newBlackout);
   }
 
