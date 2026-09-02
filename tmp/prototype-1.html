@@ -119,6 +119,9 @@ header h1 {
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
+  color: #08162f;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .square .chip {
   position: absolute;
@@ -126,8 +129,14 @@ header h1 {
   width: 72%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: var(--chip-color);
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.4) 0 16%, transparent 17% 32%),
+    radial-gradient(circle at 50% 45%, var(--chip-color) 0 62%, color-mix(in srgb, var(--chip-color) 86%, black) 100%);
   border: 2px solid var(--chip-border);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.26),
+    inset 0 -4px 7px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.16);
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) scale(.85);
@@ -454,16 +463,16 @@ const GENERAL_CONFERENCE_OPTIONS = [
 
 const MARKER_COLOR_MAP = {
   red: {
-    chipColor: "rgba(199, 25, 32, 0.44)",
-    chipBorder: "rgba(163, 15, 21, 0.28)"
+    chipColor: "rgba(199, 25, 32, 0.34)",
+    chipBorder: "rgba(163, 15, 21, 0.24)"
   },
   green: {
-    chipColor: "rgba(46, 139, 87, 0.44)",
-    chipBorder: "rgba(31, 106, 64, 0.28)"
+    chipColor: "rgba(46, 139, 87, 0.34)",
+    chipBorder: "rgba(31, 106, 64, 0.24)"
   },
   blue: {
-    chipColor: "rgba(42, 111, 219, 0.44)",
-    chipBorder: "rgba(31, 87, 172, 0.28)"
+    chipColor: "rgba(42, 111, 219, 0.34)",
+    chipBorder: "rgba(31, 87, 172, 0.24)"
   }
 };
 
