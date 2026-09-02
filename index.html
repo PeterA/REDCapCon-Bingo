@@ -113,7 +113,7 @@ const clearBtn = document.getElementById("clearBtn");
 
 let currentItems = [];
 let marked = new Set();
-let bingoWasActive = false;
+let bingoLineCount = 0;
 
 /* Fisher-Yates copy/shuffle so BINGO_OPTIONS is never mutated. */
 function shuffledCopy(items) {
@@ -173,7 +173,7 @@ function generateCard() {
   }
 
   marked = new Set();
-  bingoWasActive = false;
+  bingoLineCount = 0;
   renderBoard();
   updateBingoState(false);
 }
@@ -253,8 +253,8 @@ function isMarked(index) {
   return index === CENTER_INDEX || marked.has(index);
 }
 
-/* Check rows, columns, and both diagonals for five in a row. */
-function hasBingo() {
+/* Count completed rows, columns, and diagonals. */
+function countBingos() {
   const lines = [];
 
   for (let row = 0; row < BOARD_SIZE; row++) {
@@ -268,18 +268,26 @@ function hasBingo() {
   lines.push(Array.from({length: BOARD_SIZE}, (_, i) => i * BOARD_SIZE + i));
   lines.push(Array.from({length: BOARD_SIZE}, (_, i) => i * BOARD_SIZE + (BOARD_SIZE - 1 - i)));
 
-  return lines.some(line => line.every(isMarked));
+  return lines.filter(line => line.every(isMarked)).length;
 }
 
 function updateBingoState(allowCelebration) {
-  const active = hasBingo();
+  const bingoCount = countBingos();
+  const active = bingoCount > 0;
   bingoMessageEl.classList.toggle("show", active);
 
-  if (active && !bingoWasActive && allowCelebration) {
-    celebrate();
+  if (active) {
+    bingoMessageEl.textContent = bingoCount === 1 ? "BINGO!" : `BINGO! x ${bingoCount}`;
+  } else {
+    bingoMessageEl.textContent = "BINGO!";
   }
 
-  bingoWasActive = active;
+  const newBingos = Math.max(0, bingoCount - bingoLineCount);
+  if (allowCelebration && newBingos > 0) {
+    celebrate(newBingos);
+  }
+
+  bingoLineCount = bingoCount;
 }
 
 function clearMarks() {
@@ -288,12 +296,12 @@ function clearMarks() {
     cell.classList.remove("marked");
     cell.setAttribute("aria-pressed", "false");
   });
-  bingoWasActive = false;
+  bingoLineCount = 0;
   updateBingoState(false);
 }
 
 /* Lightweight confetti animation. No sound and no external library. */
-function celebrate() {
+function celebrate(multiplier = 1) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const canvas = document.getElementById("confetti");
@@ -311,7 +319,7 @@ function celebrate() {
   resize();
 
   const colors = ["#c71920", "#ffffff", "#10254a", "#ef5350", "#ffd54f"];
-  const pieces = Array.from({length: 110}, () => ({
+  const pieces = Array.from({length: 110 * multiplier}, () => ({
     x: Math.random() * window.innerWidth,
     y: -20 - Math.random() * window.innerHeight * 0.35,
     w: 5 + Math.random() * 7,
