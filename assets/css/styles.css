@@ -70,17 +70,8 @@
     background: white;
   }
 
-  .board::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: #000;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .board.blackout-flash::after {
-    animation: blackout-flash 520ms ease-in-out 3;
+  .board.blackout-flash .square {
+    animation: blackout-square-flash 900ms ease-in-out 1;
   }
 
   .square {
@@ -240,9 +231,15 @@
     z-index: 9999;
   }
 
-  @keyframes blackout-flash {
-    0%, 100% { opacity: 0; }
-    50% { opacity: .88; }
+  @keyframes blackout-square-flash {
+    0%, 50%, 100% {
+      background: white;
+      color: var(--navy);
+    }
+    25%, 75% {
+      background: #000;
+      color: #fff;
+    }
   }
 
   @media (max-width: 430px) {
@@ -258,5 +255,5 @@
 
   @media (prefers-reduced-motion: reduce) {
     .square .chip { transition: none; }
-    .board.blackout-flash::after { animation: none; }
+    .board.blackout-flash .square { animation: none; }
   }
