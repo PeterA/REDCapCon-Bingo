@@ -105,6 +105,9 @@ const CENTER_LOGO = "assets/images/center-logo.jpg";
 
 const BOARD_SIZE = 5;
 const CENTER_INDEX = 12;
+const BLACKOUT_LABEL = "Blackout Bingo!";
+const BLACKOUT_FLASH_COUNT = 3;
+const BLACKOUT_FLASH_DURATION_MS = 520;
 
 const boardEl = document.getElementById("board");
 const bingoMessageEl = document.getElementById("bingoMessage");
@@ -114,6 +117,8 @@ const clearBtn = document.getElementById("clearBtn");
 let currentItems = [];
 let marked = new Set();
 let bingoLineCount = 0;
+let hadBlackout = false;
+let blackoutFlashTimeout = null;
 
 /* Fisher-Yates copy/shuffle so BINGO_OPTIONS is never mutated. */
 function shuffledCopy(items) {
@@ -174,6 +179,8 @@ function generateCard() {
 
   marked = new Set();
   bingoLineCount = 0;
+  hadBlackout = false;
+  clearBlackoutFlash();
   renderBoard();
   updateBingoState(false);
 }
@@ -271,23 +278,51 @@ function countBingos() {
   return lines.filter(line => line.every(isMarked)).length;
 }
 
+function isBlackout() {
+  return marked.size === BOARD_SIZE * BOARD_SIZE - 1;
+}
+
+function clearBlackoutFlash() {
+  if (blackoutFlashTimeout) {
+    clearTimeout(blackoutFlashTimeout);
+    blackoutFlashTimeout = null;
+  }
+  boardEl.classList.remove("blackout-flash");
+}
+
+function triggerBlackoutFlash() {
+  boardEl.classList.remove("blackout-flash");
+  void boardEl.offsetWidth;
+  boardEl.classList.add("blackout-flash");
+
+  blackoutFlashTimeout = setTimeout(() => {
+    boardEl.classList.remove("blackout-flash");
+    blackoutFlashTimeout = null;
+  }, BLACKOUT_FLASH_COUNT * BLACKOUT_FLASH_DURATION_MS);
+}
+
 function updateBingoState(allowCelebration) {
   const bingoCount = countBingos();
+  const blackout = isBlackout();
   const active = bingoCount > 0;
   bingoMessageEl.classList.toggle("show", active);
 
   if (active) {
-    bingoMessageEl.textContent = bingoCount === 1 ? "BINGO!" : `BINGO! x ${bingoCount}`;
+    bingoMessageEl.textContent = blackout
+      ? BLACKOUT_LABEL
+      : (bingoCount === 1 ? "BINGO!" : `BINGO! x ${bingoCount}`);
   } else {
     bingoMessageEl.textContent = "BINGO!";
   }
 
   const newBingos = Math.max(0, bingoCount - bingoLineCount);
-  if (allowCelebration && newBingos > 0) {
-    celebrate(newBingos);
+  const newBlackout = blackout && !hadBlackout;
+  if (allowCelebration && (newBingos > 0 || newBlackout)) {
+    celebrate(Math.max(1, newBingos), newBlackout);
   }
 
   bingoLineCount = bingoCount;
+  hadBlackout = blackout;
 }
 
 function clearMarks() {
@@ -297,12 +332,15 @@ function clearMarks() {
     cell.setAttribute("aria-pressed", "false");
   });
   bingoLineCount = 0;
+  hadBlackout = false;
+  clearBlackoutFlash();
   updateBingoState(false);
 }
 
 /* Lightweight confetti animation. No sound and no external library. */
-function celebrate(multiplier = 1) {
+function celebrate(multiplier = 1, blackout = false) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (blackout) triggerBlackoutFlash();
 
   const canvas = document.getElementById("confetti");
   const ctx = canvas.getContext("2d");
