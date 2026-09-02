@@ -253,8 +253,26 @@
     }
   }
 
-  .board.blackout-flash .square::after {
+  .board.blackout-flash .square:not(.free)::after {
     animation: blackout-square-flash 900ms ease-in-out 1;
+  }
+
+  @keyframes bingo-square-flash {
+    0% {
+      opacity: 0;
+    }
+    40%,
+    65% {
+      opacity: .5;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .square.bingo-flash::after {
+    background: var(--red);
+    animation: bingo-square-flash 650ms ease-in-out 1;
   }
 
   @media (max-width: 430px) {
@@ -270,5 +288,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .square .chip { transition: none; }
-    .board.blackout-flash .square::after { animation: none; }
+    .board.blackout-flash .square:not(.free)::after { animation: none; }
+    .square.bingo-flash::after { animation: none; }
   }
