@@ -8,6 +8,7 @@
     --muted: #5b6573;
     --chip-color: rgba(74, 133, 224, 0.29);
     --chip-border: rgba(65, 112, 184, 0.24);
+    --game-max-size: min(calc(100dvh - 200px), 820px);
   }
 
   * { box-sizing: border-box; }
@@ -64,8 +65,8 @@
   .board {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    position: relative;
-    width: 100%;
+    width: min(100%, var(--game-max-size));
+    margin: 0 auto;
     border: 2px solid var(--line);
     border-radius: 10px;
     overflow: hidden;
@@ -183,7 +184,9 @@
     display: flex;
     gap: 10px;
     justify-content: center;
-    padding: 14px 12px 6px;
+    width: min(calc(100% - 20px), var(--game-max-size));
+    margin: 0 auto;
+    padding: 12px 12px 6px;
     flex-wrap: nowrap;
   }
 
