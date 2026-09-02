@@ -106,8 +106,7 @@ const CENTER_LOGO = "assets/images/center-logo.jpg";
 const BOARD_SIZE = 5;
 const CENTER_INDEX = 12;
 const BLACKOUT_LABEL = "Blackout Bingo!";
-const BLACKOUT_FLASH_COUNT = 3;
-const BLACKOUT_FLASH_DURATION_MS = 520;
+const BLACKOUT_FLASH_DURATION_MS = 900;
 
 const boardEl = document.getElementById("board");
 const bingoMessageEl = document.getElementById("bingoMessage");
@@ -298,7 +297,7 @@ function triggerBlackoutFlash() {
   blackoutFlashTimeout = setTimeout(() => {
     boardEl.classList.remove("blackout-flash");
     blackoutFlashTimeout = null;
-  }, BLACKOUT_FLASH_COUNT * BLACKOUT_FLASH_DURATION_MS);
+  }, BLACKOUT_FLASH_DURATION_MS);
 }
 
 function updateBingoState(allowCelebration) {
