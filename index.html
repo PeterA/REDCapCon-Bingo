@@ -3,27 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>REDCap Con Bingo</title>
+<title>REDCapCon Bingo</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
 <main class="app">
   <header>
-    <h1>REDCap Con Bingo</h1>
+    <h1>REDCapCon Bingo</h1>
   </header>
 
-  <p class="intro">Mark off the squares as you hear or see them during the sessions!</p>
+  <p class="intro">Fill the squares as you hear or see them during the sessions!</p>
 
   <div class="board-wrap">
     <div id="board" class="board" role="grid" aria-label="REDCap Con Bingo card"></div>
   </div>
 
+  <div id="bingoMessage" class="bingo-message" aria-live="polite">BINGO!</div>
+
   <div class="controls">
     <button id="resetBtn" type="button">New Card</button>
     <button id="clearBtn" class="primary" type="button">Clear Marked Squares</button>
   </div>
-
-  <div id="bingoMessage" class="bingo-message" aria-live="polite">BINGO!</div>
 
   <section class="how-to" aria-labelledby="howToTitle">
     <h2 id="howToTitle">How to Play</h2>
